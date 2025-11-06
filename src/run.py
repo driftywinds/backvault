@@ -75,7 +75,11 @@ def main():
         logger.error(f"Export failed: {e}")
         return
 
-    logger.info("\n Export completed successfully.")
+    logger.info("Export completed successfully.")
+
+    source.logout()
+
+    logger.info("Successfully logged out.")
 
 
 if __name__ == "__main__":
