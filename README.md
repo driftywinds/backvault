@@ -71,6 +71,7 @@ BackVault will automatically:
 2. Export your vault
 3. Encrypt it using `BW_FILE_PASSWORD`
 4. Store the backup in `/app/backups` (mounted to your host directory)
+5. Logout after every backup
 
 ---
 
@@ -89,19 +90,49 @@ BackVault will automatically:
 
 ---
 
-## 🔐 Backup Output
+## 🔐 Restore & Decrypting Backups
 
-* Encrypted backup files are saved to `/app/backups`
-* Files are timestamped, e.g.:
+Bitwarden encrypted exports use the **same key derivation and encryption** methods as Bitwarden itself — not generic AES or OpenSSL.
+This means you **must use the Bitwarden CLI** to decrypt or restore the backups.
 
-  ```
-  backup_20251106_210613.enc
-  ```
-* To decrypt manually:
+### 🪄 How to restore a backup
 
-  ```bash
-  openssl enc -d -aes-256-cbc -in file.enc -out vault.json -pass pass:your_backup_password
-  ```
+1. Install the official **Bitwarden CLI**:
+   [https://bitwarden.com/help/cli/](https://bitwarden.com/help/cli/)
+
+2. Run the following command to import (decrypt) your backup:
+
+   ```bash
+   bw import --format encrypted_json --password <BACKUP_PASSWORD> --file /path/to/backup.json
+   ```
+
+   Replace `<BACKUP_PASSWORD>` with the same value used for `BW_FILE_PASSWORD` when the backup was created.
+
+3. You can import into:
+
+   * The **same** account you exported from, or
+   * A **different** Bitwarden account (the encryption is self-contained).
+
+4. The vault contents will be decrypted and restored automatically.
+
+---
+
+### 🔍 Why `openssl` or manual decryption doesn’t work
+
+When you export with:
+
+```bash
+bw export --format encrypted_json --password <PASSWORD>
+```
+
+Bitwarden:
+
+1. Salts and stretches your password using your account’s KDF settings (PBKDF2 or Argon2).
+2. Derives a new key via HKDF.
+3. Encrypts your vault data with AES-CBC and adds a Message Authentication Code (MAC).
+
+The resulting file is a **Bitwarden-encrypted export**, not a generic AES file.
+Only the Bitwarden CLI can correctly handle this format.
 
 ---
 
