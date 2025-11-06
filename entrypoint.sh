@@ -1,7 +1,18 @@
 #!/bin/bash
 echo "Initializing container and setting up cron job"
 BACKUP_INTERVAL_HOURS=${BACKUP_INTERVAL_HOURS:-12}
-CRON_EXPRESSION=${CRON_EXPRESSION:-"0 */$BACKUP_INTERVAL_HOURS * * *"}
-echo "$CRON_EXPRESSION python /app/run.py >> /var/log/cron.log 2>&1" | crontab -
+CRON_EXPRESSION=${CRON_EXPRESSION:-"*/$BACKUP_INTERVAL_HOURS * * * *"}
+
+cat > /app/run_wrapper.sh <<EOF
+#!/bin/bash
+export PATH="/usr/local/bin:\$PATH"
+$(printenv | grep -E 'BW_|BACKUP_' | sed 's/^/export /')
+/usr/local/bin/python /app/run.py >> /var/log/cron.log 2>&1
+EOF
+
+chmod +x /app/run_wrapper.sh
+
+echo "$CRON_EXPRESSION /app/run_wrapper.sh" | crontab -
+
 echo "Cron setup complete, starting cron in foreground"
-exec cron -f
+exec cron -L 15 -f

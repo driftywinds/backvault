@@ -2,8 +2,16 @@ import os
 import logging
 from bw_client import BitwardenClient
 from datetime import datetime
+from sys import stdout
 
-logging.basicConfig(level=logging.INFO, format="%(message)s")
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s: %(message)s",
+    handlers=[
+        logging.FileHandler("/var/log/cron.log"),
+        logging.StreamHandler(stdout)
+    ]
+)
 logger = logging.getLogger(__name__)
 
 
