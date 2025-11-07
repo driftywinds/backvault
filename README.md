@@ -10,6 +10,7 @@ It’s designed for hands-free, secure, and automated backups using the official
 - 🔒 Securely exports your vault using your Bitwarden credentials  
 - 🕐 Supports both **interval-based** and **cron-based** backup scheduling  
 - 💾 Password-protected backup files using AES encryption  
+- 🧹 **Automated Cleanup**: Automatically deletes old backups based on a configurable retention period.
 - ✨ **Two Encryption Modes**: Choose between Bitwarden's native encrypted format or a portable, standard AES-256-GCM encrypted format.
 - 🌐 Works with both Bitwarden Cloud and self-hosted Bitwarden/Vaultwarden  
 - 🐳 Runs fully containerized — no setup or local dependencies required
@@ -89,6 +90,7 @@ BackVault will automatically:
 | `BW_FILE_PASSWORD`             | Password to encrypt exported backup file       | ✅        | `strong_backup_password`    |
 | `BACKUP_INTERVAL_HOURS`        | Alternative to cron expression (integer hours) | ❌        | `12`                        |
 | `BACKUP_ENCRYPTION_MODE`       | `bitwarden` (default) or `raw` for portable AES-256-GCM encryption. | ❌ | `raw` |
+| `RETAIN_DAYS`                  | Days to keep backups. `7` by default. Set to `0` to disable cleanup. | ❌ | `7` |
 | `CRON_EXPRESSION`              | Cron string to schedule backups                | ❌        | `0 */12 * * *`              |
 | `NODE_TLS_REJECT_UNAUTHORIZED` | Set to `0` for self-signed certs               | ❌        | `0`                         |
 
