@@ -69,8 +69,12 @@ class BitwardenClient:
                     env=env,
                     preexec_fn=None,  # Disable process group creation
                 )
-            except CalledProcessError:
-                pass
+            except subprocess.CalledProcessError as e:
+                if e.returncode == 1:
+                    pass
+                else:
+                    logger.error(f"Bitwarden CLI error: {e.stderr.strip()}")
+                    raise BitwardenError(e.stderr.strip())
             except:
                 try:
                     self.logout()
