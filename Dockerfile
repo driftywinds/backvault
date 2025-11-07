@@ -39,6 +39,7 @@ RUN chmod +x /app/entrypoint.sh
 
 RUN chmod +x /app/cleanup.sh
 
-RUN pip install --no-input --no-cache-dir cryptography
+RUN pip install --upgrade pip && \
+    pip install --no-input --no-cache-dir cryptography
 
 ENTRYPOINT ["/app/entrypoint.sh"]
