@@ -13,7 +13,7 @@ EOF
 chmod +x /app/run_wrapper.sh
 
 { echo "$CRON_EXPRESSION /app/run_wrapper.sh"
-  echo "* * * * * /app/cleanup.sh 2>&1 | tee -a /var/log/cron.log > /proc/1/fd/1"
+  echo "0 0 * * * /app/cleanup.sh 2>&1 | tee -a /var/log/cron.log > /proc/1/fd/1"
 } | crontab -
 
 echo "Cron setup complete, starting cron on foreground."
