@@ -23,6 +23,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 password_regex = re.compile(r"('--password',\s*)('[^']*')(\s*]')", re.IGNORECASE)
+unlock_regex = re.compile(r"('unlock',\s*)('[^']*\s*--raw)", re.IGNORECASE)
 
 
 class BitwardenError(Exception):
@@ -76,10 +77,10 @@ class BitwardenClient:
                 else:
                     logger.error(f"Bitwarden CLI error: {e.stderr.strip()}")
                     raise BitwardenError(e.stderr.strip())
-            except:
+            except Exception:
                 try:
                     self.logout()
-                except:
+                except Exception:
                     pass
                 raise BitwardenError(f"Failed to configure BW server to {server}")
 
@@ -118,6 +119,7 @@ class BitwardenClient:
             )
         except CalledProcessError as e:
             masked_e = password_regex.sub("('--password', '****')]", e.__str__())
+            masked_e = unlock_regex.sub("('unlock', '**** --raw')", masked_e)
             logger.error(f"Failed to run command: {masked_e}")
             try:
                 sprun(
@@ -128,16 +130,35 @@ class BitwardenClient:
                     env=env,
                 )
             except CalledProcessError as inner_e:
-                masked_inner_e = password_regex.sub("('--password', '****')]", inner_e.__str__())
-                logger.error(f"Failed to log out after error. Failure: {masked_inner_e}")
+                masked_inner_e = password_regex.sub(
+                    "('--password', '****')]", inner_e.__str__()
+                )
+                masked_inner_e = unlock_regex.sub(
+                    "'unlock', '**** --raw'", masked_inner_e
+                )
+                logger.error(
+                    f"Failed to log out after error. Failure: {masked_inner_e}"
+                )
             raise BitwardenError(f"Failed to run command: {masked_e}") from None
 
         if result.returncode != 0:
             logger.error(
-                f"Bitwarden CLI error: {password_regex.sub("('--password', '****')]", result.stderr.strip())}"
+                f"Bitwarden CLI error: {
+                    unlock_regex.sub(
+                        password_regex.sub(
+                            "('--password', '****')]", result.stderr.strip()
+                        ),
+                        "'unlock', '**** --raw'",
+                    )
+                }"
             )
             raise BitwardenError(
-                password_regex.sub("('--password', '****')]", result.stderr.strip())
+                unlock_regex.sub(
+                    password_regex.sub(
+                        "('--password', '****')]", result.stderr.strip()
+                    ),
+                    "'unlock', '**** --raw'",
+                )
             )
 
         output = result.stdout.strip()
@@ -264,10 +285,10 @@ class BitwardenClient:
 
     def export_raw_encrypted(self, backup_file: str, file_pw: str):
         """Exports raw data and encrypts it in-memory."""
-        logger.info(f"Exporting raw data from Bitwarden...")
+        logger.info("Exporting raw data from Bitwarden...")
         raw_json = self._run(
             cmd=["export", "--format", "json", "--raw"], capture_json=True
         )
-        encrypted_data = self.encrypt_data(raw_json.encode("utf-8"), file_pw)
+        encrypted_data = self.encrypt_data(json.dumps(raw_json).encode("utf-8"), file_pw)
         with open(backup_file, "wb") as f:
             f.write(encrypted_data)

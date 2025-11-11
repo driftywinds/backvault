@@ -150,7 +150,7 @@ from cryptography.exceptions import InvalidTag
 
 SALT_SIZE = 16
 KEY_SIZE = 32
-PBKDF2_ITERATIONS = 320000
+PBKDF2_ITERATIONS = 600000
 
 def decrypt_data(encrypted_data: bytes, password: str) -> bytes:
     salt = encrypted_data[:SALT_SIZE]
