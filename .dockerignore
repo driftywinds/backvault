@@ -13,3 +13,4 @@ __pycache__/
 sqlcipher/
 decrypt.py
 .github/
+tests/
