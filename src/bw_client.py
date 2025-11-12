@@ -108,7 +108,26 @@ class BitwardenClient:
         if self.session:
             env["BW_SESSION"] = self.session
         full_cmd = [self.bw_cmd] + cmd
-        logger.debug(f"Running command: {' '.join(full_cmd)}")
+        # Redact sensitive values before logging
+        def _redact_cmd(cmd):
+            redacted = []
+            sensitive_flags = {"--password", "--apikey", "--clientsecret", "password"}
+            skip_next = False
+            for i, arg in enumerate(cmd):
+                if skip_next:
+                    redacted.append("[REDACTED]")
+                    skip_next = False
+                elif arg in sensitive_flags:
+                    redacted.append(arg)
+                    skip_next = True
+                else:
+                    # For direct password (e.g. `bw unlock <password>`) redact if flag is not used
+                    if i > 0 and cmd[i-1] == "unlock":
+                        redacted.append("[REDACTED]")
+                    else:
+                        redacted.append(arg)
+            return redacted
+        logger.debug(f"Running command: {' '.join(_redact_cmd(full_cmd))}")
         try:
             result = sprun(
                 full_cmd,
