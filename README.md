@@ -1,3 +1,9 @@
+[![CI](https://github.com/mvfc/backvault/actions/workflows/ci.yml/badge.svg)](https://github.com/mvfc/backvault/actions/workflows/ci.yml) [![Release CI](https://github.com/mvfc/backvault/actions/workflows/release.yml/badge.svg)](https://github.com/mvfc/backvault/actions/workflows/release.yml) [![CodeQL](https://github.com/mvfc/backvault/actions/workflows/github-code-scanning/codeql/badge.svg)](https://github.com/mvfc/backvault/actions/workflows/github-code-scanning/codeql) ![GitHub Release](https://img.shields.io/github/v/release/mvfc/backvault)
+
+
+
+---
+
 # 🗄️ BackVault
 
 **BackVault** is a lightweight Dockerized service that periodically backs up your **Bitwarden** or **Vaultwarden** vaults into password-protected encrypted files.
