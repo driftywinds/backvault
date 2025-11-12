@@ -4,6 +4,7 @@ from src.run import main, require_env
 import os
 from subprocess import CompletedProcess
 
+
 @patch("src.run.db_connect")
 @patch("src.run.get_key")
 @patch("src.bw_client.sprun")
@@ -66,9 +67,7 @@ def test_main_bitwarden_encryption(
         "PRAGMA_KEY_FILE": "/tmp/db.key",
     },
 )
-def test_main_raw_encryption(
-    mock_bw_client, mock_sprun, mock_get_key, mock_db_connect
-):
+def test_main_raw_encryption(mock_bw_client, mock_sprun, mock_get_key, mock_db_connect):
     """
     Tests the main function with 'raw' encryption mode.
     """

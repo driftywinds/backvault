@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import patch, MagicMock, ANY
+from unittest.mock import patch, ANY
 from src.bw_client import BitwardenClient, BitwardenError
 
 
