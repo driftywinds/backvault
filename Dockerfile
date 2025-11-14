@@ -2,10 +2,13 @@ FROM python:3.13-slim-bookworm
 
 # Pin version and digest for Bitwarden CLI
 ARG BW_VERSION="2025.10.0"
-ARG BW_SHA256="0544c64d3e9932bb5f2a70e819695ea78186a44ac87a0b1d753e9c55217041d9"
-ARG SUPERCRONIC_URL=https://github.com/aptible/supercronic/releases/download/v0.2.39/supercronic-linux-amd64
-ARG SUPERCRONIC_SHA1SUM=c98bbf82c5f648aaac8708c182cc83046fe48423
-ARG SUPERCRONIC=supercronic-linux-amd64
+ARG BW_SHA256_AMD64="0544c64d3e9932bb5f2a70e819695ea78186a44ac87a0b1d753e9c55217041d9"
+ARG BW_SHA256_ARM64="0544c64d3e9932bb5f2a70e819695ea78186a44ac87a0b1d753e9c55217041d9"
+
+# Supercronic variables for multi-arch
+ARG SUPERCRONIC_VERSION="v0.2.39"
+ARG SUPERCRONIC_SHA1SUM_AMD64="c98bbf82c5f648aaac8708c182cc83046fe48423"
+ARG SUPERCRONIC_SHA1SUM_ARM64="5ef4ccc3d43f12d0f6c3763758bc37cc4e5af76e"
 
 # Install minimal required packages
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -23,19 +26,50 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN groupadd -g 1000 backvault \
  && useradd -m -u 1000 -g 1000 -s /bin/bash backvault
 
-# Install Bitwarden CLI (verified)
+# Install Bitwarden CLI (multi-arch)
 RUN set -eux; \
+    ARCH="$(dpkg --print-architecture)"; \
+    case "${ARCH}" in \
+        amd64) \
+            BW_SHA256="${BW_SHA256_AMD64}"; \
+            ;; \
+        arm64) \
+            BW_SHA256="${BW_SHA256_ARM64}"; \
+            ;; \
+        *) \
+            echo "Unsupported architecture: ${ARCH}"; \
+            exit 1; \
+            ;; \
+    esac; \
     curl -Lo bw.zip "https://github.com/bitwarden/clients/releases/download/cli-v${BW_VERSION}/bw-linux-${BW_VERSION}.zip"; \
     echo "${BW_SHA256}  bw.zip" | sha256sum -c -; \
     unzip bw.zip -d /usr/local/bin; \
     chmod +x /usr/local/bin/bw; \
     rm bw.zip
 
-RUN curl -fsSLO "$SUPERCRONIC_URL" \
- && echo "${SUPERCRONIC_SHA1SUM}  ${SUPERCRONIC}" | sha1sum -c - \
- && chmod +x "$SUPERCRONIC" \
- && mv "$SUPERCRONIC" "/usr/local/bin/${SUPERCRONIC}" \
- && ln -s "/usr/local/bin/${SUPERCRONIC}" /usr/local/bin/supercronic
+# Install Supercronic (multi-arch)
+RUN set -eux; \
+    ARCH="$(dpkg --print-architecture)"; \
+    case "${ARCH}" in \
+        amd64) \
+            SUPERCRONIC_URL="https://github.com/aptible/supercronic/releases/download/${SUPERCRONIC_VERSION}/supercronic-linux-amd64"; \
+            SUPERCRONIC_SHA1SUM="${SUPERCRONIC_SHA1SUM_AMD64}"; \
+            SUPERCRONIC="supercronic-linux-amd64"; \
+            ;; \
+        arm64) \
+            SUPERCRONIC_URL="https://github.com/aptible/supercronic/releases/download/${SUPERCRONIC_VERSION}/supercronic-linux-arm64"; \
+            SUPERCRONIC_SHA1SUM="${SUPERCRONIC_SHA1SUM_ARM64}"; \
+            SUPERCRONIC="supercronic-linux-arm64"; \
+            ;; \
+        *) \
+            echo "Unsupported architecture: ${ARCH}"; \
+            exit 1; \
+            ;; \
+    esac; \
+    curl -fsSLO "$SUPERCRONIC_URL"; \
+    echo "${SUPERCRONIC_SHA1SUM}  ${SUPERCRONIC}" | sha1sum -c -; \
+    chmod +x "$SUPERCRONIC"; \
+    mv "$SUPERCRONIC" /usr/local/bin/supercronic
 
 # Prepare working directories
 RUN mkdir -p /app/logs /app/backups /app/db /app/src && \
@@ -44,12 +78,10 @@ RUN mkdir -p /app/logs /app/backups /app/db /app/src && \
 
 # Copy project files
 WORKDIR /app
-
 COPY --chown=1000:1000 ./requirements.txt /app/requirements.txt
 COPY --chown=1000:1000 ./src /app/src
 COPY --chown=1000:1000 ./entrypoint.sh /app/entrypoint.sh
 COPY --chown=1000:1000 ./cleanup.sh /app/cleanup.sh
-
 RUN chmod +x /app/entrypoint.sh /app/cleanup.sh
 
 # Install Python dependencies
