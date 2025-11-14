@@ -1,51 +1,39 @@
 FROM python:3.13-slim-bookworm
 
-# Pin version and digest for Bitwarden CLI
+# Pin version for Bitwarden CLI
 ARG BW_VERSION="2025.10.0"
-ARG BW_SHA256_AMD64="0544c64d3e9932bb5f2a70e819695ea78186a44ac87a0b1d753e9c55217041d9"
-ARG BW_SHA256_ARM64="0544c64d3e9932bb5f2a70e819695ea78186a44ac87a0b1d753e9c55217041d9"
 
 # Supercronic variables for multi-arch
 ARG SUPERCRONIC_VERSION="v0.2.39"
 ARG SUPERCRONIC_SHA1SUM_AMD64="c98bbf82c5f648aaac8708c182cc83046fe48423"
-ARG SUPERCRONIC_SHA1SUM_ARM64="5ef4ccc3d43f12d0f6c3763758bc37cc4e5af76e"
+ARG SUPERCRONIC_SHA1SUM_ARM64="d5e02aa760b3d434bc7b991777aa89ef4a503e49"
 
-# Install minimal required packages
+# Install minimal required packages including Node.js for npm
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     bash \
-    unzip \
+    ca-certificates \
+    gnupg \
     sqlcipher \
     libssl-dev \
     libsqlite3-dev \
     libsqlcipher-dev \
     gcc \
+    && mkdir -p /etc/apt/keyrings \
+    && curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg \
+    && echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_20.x nodistro main" | tee /etc/apt/sources.list.d/nodesource.list \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends nodejs \
     && rm -rf /var/lib/apt/lists/*
 
 # Create non-root user
 RUN groupadd -g 1000 backvault \
  && useradd -m -u 1000 -g 1000 -s /bin/bash backvault
 
-# Install Bitwarden CLI (multi-arch)
-RUN set -eux; \
-    ARCH="$(dpkg --print-architecture)"; \
-    case "${ARCH}" in \
-        amd64) \
-            BW_SHA256="${BW_SHA256_AMD64}"; \
-            ;; \
-        arm64) \
-            BW_SHA256="${BW_SHA256_ARM64}"; \
-            ;; \
-        *) \
-            echo "Unsupported architecture: ${ARCH}"; \
-            exit 1; \
-            ;; \
-    esac; \
-    curl -Lo bw.zip "https://github.com/bitwarden/clients/releases/download/cli-v${BW_VERSION}/bw-linux-${BW_VERSION}.zip"; \
-    echo "${BW_SHA256}  bw.zip" | sha256sum -c -; \
-    unzip bw.zip -d /usr/local/bin; \
-    chmod +x /usr/local/bin/bw; \
-    rm bw.zip
+# Install Bitwarden CLI via npm (works for all architectures)
+RUN npm install -g @bitwarden/cli@${BW_VERSION} \
+    && ln -s /usr/local/lib/node_modules/@bitwarden/cli/build/bw.js /usr/local/bin/bw \
+    && chmod +x /usr/local/bin/bw
 
 # Install Supercronic (multi-arch)
 RUN set -eux; \
@@ -88,7 +76,8 @@ RUN chmod +x /app/entrypoint.sh /app/cleanup.sh
 RUN pip install --upgrade pip && \
     pip install --no-input --no-cache-dir -r requirements.txt
 
-RUN apt-get remove curl unzip binutils -y
+# Clean up build dependencies (keep nodejs for bw cli)
+RUN apt-get remove -y curl gnupg gcc && apt-get autoremove -y
 
 ENV PYTHONPATH=/app
 
