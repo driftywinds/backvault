@@ -2,7 +2,6 @@ FROM python:3.13-slim-bookworm
 
 # Pin version for Bitwarden CLI
 ARG BW_VERSION="2025.10.0"
-ARG BW_NPM_SHA256="b8d8ff6b327733d57ac03158b0f613a64637ab6809b06cb50e6b19eccccbe52f"
 
 # Supercronic variables for multi-arch
 ARG SUPERCRONIC_VERSION="v0.2.39"
@@ -13,7 +12,6 @@ ARG SUPERCRONIC_SHA1SUM_ARM64="d5e02aa760b3d434bc7b991777aa89ef4a503e49"
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     bash \
-    unzip \
     ca-certificates \
     gnupg \
     sqlcipher \
@@ -32,17 +30,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN groupadd -g 1000 backvault \
  && useradd -m -u 1000 -g 1000 -s /bin/bash backvault
 
-# Install Bitwarden CLI using npm build artifact (works for all architectures)
-RUN set -eux; \
-    curl -Lo bw-npm.zip "https://github.com/bitwarden/clients/releases/download/cli-v${BW_VERSION}/bitwarden-cli-${BW_VERSION}-npm-build.zip"; \
-    echo "${BW_NPM_SHA256}  bw-npm.zip" | sha256sum -c -; \
-    unzip bw-npm.zip -d /tmp/bw-cli; \
-    cd /tmp/bw-cli && npm install --production --no-optional; \
-    mkdir -p /usr/local/lib/node_modules/@bitwarden; \
-    mv /tmp/bw-cli /usr/local/lib/node_modules/@bitwarden/cli; \
-    ln -s /usr/local/lib/node_modules/@bitwarden/cli/build/bw.js /usr/local/bin/bw; \
-    chmod +x /usr/local/bin/bw; \
-    rm -f bw-npm.zip
+# Install Bitwarden CLI via npm (simpler approach, works for all architectures)
+RUN npm install -g @bitwarden/cli && \
+    chmod +x /usr/local/lib/node_modules/@bitwarden/cli/build/bw.js
 
 # Install Supercronic (multi-arch)
 RUN set -eux; \
@@ -86,7 +76,7 @@ RUN pip install --upgrade pip && \
     pip install --no-input --no-cache-dir -r requirements.txt
 
 # Clean up build dependencies (keep nodejs for bw cli)
-RUN apt-get remove -y curl unzip gnupg gcc && apt-get autoremove -y && rm -rf /var/lib/apt/lists/*
+RUN apt-get remove -y curl gnupg gcc && apt-get autoremove -y && rm -rf /var/lib/apt/lists/*
 
 ENV PYTHONPATH=/app
 
