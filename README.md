@@ -2,7 +2,7 @@
 
 ---
 
-# 🗄️ BackVault
+<img width="500" height="500" alt="image" src="https://github.com/user-attachments/assets/3ca55b47-b1c7-4002-a167-f5752605fa1a" />
 
 **BackVault** is a lightweight Dockerized service that periodically backs up your **Bitwarden** or **Vaultwarden** vaults into password-protected encrypted files.
 It’s designed for hands-free, secure, and automated backups using the official Bitwarden CLI.
@@ -25,6 +25,8 @@ It’s designed for hands-free, secure, and automated backups using the official
 
 You can run BackVault directly using the **published Docker image**, no build required.
 You can use either the GitHub Registry image (`ghcr.io/mvfc/backvault`) or the Docker Hub image (`mvflc/backvault`).
+
+Before running the Docker or Docker Compose commands, create the db and backup folders you will mount to on your host *WITHOUT* using sudo so they are owned by user 1000:1000 (which is unpriviledged). If you skip this step, you *MUST* do a `sudo chown -R 1000:1000 ./db` and a `sudo chown -R 1000:1000 ./backups`.
 
 ```bash
 docker run -d \
@@ -247,6 +249,16 @@ docker compose up -d
 
 This project is licensed under the **AGPL-3.0 License**.
 See LICENSE for details.
+
+---
+
+# ⚠️ Disclaimer
+
+BackVault is provided "as is" and without any express or implied warranties, including, but not limited to, the implied warranties of merchantability and fitness for a particular purpose.
+
+The maintainer and contributors assume no liability for any direct, indirect, incidental, special, exemplary, or consequential damages (including, but not limited to, procurement of substitute goods or services; loss of use, data, or profits; or business interruption) however caused and on any theory of liability, whether in contract, strict liability, or tort (including negligence or otherwise) arising in any way out of the use of this software, even if advised of the possibility of such damage.
+
+You are solely responsible for verifying the integrity and restorability of your backups. Use of this software is entirely at your own risk.
 
 ---
 
