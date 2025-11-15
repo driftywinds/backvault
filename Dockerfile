@@ -31,8 +31,8 @@ RUN groupadd -g 1000 backvault \
  && useradd -m -u 1000 -g 1000 -s /bin/bash backvault
 
 # Install Bitwarden CLI via npm (simpler approach, works for all architectures)
-RUN npm install -g @bitwarden/cli && \
-    chmod +x /usr/local/lib/node_modules/@bitwarden/cli/build/bw.js
+# npm automatically creates the bw symlink in /usr/local/bin
+RUN npm install -g @bitwarden/cli
 
 # Install Supercronic (multi-arch)
 RUN set -eux; \
