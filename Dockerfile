@@ -6,7 +6,7 @@ ARG BW_VERSION="2025.10.0"
 # Supercronic variables for multi-arch
 ARG SUPERCRONIC_VERSION="v0.2.39"
 ARG SUPERCRONIC_SHA1SUM_AMD64="c98bbf82c5f648aaac8708c182cc83046fe48423"
-ARG SUPERCRONIC_SHA1SUM_ARM64="d5e02aa760b3d434bc7b991777aa89ef4a503e49"
+ARG SUPERCRONIC_SHA1SUM_ARM64="5ef4ccc3d43f12d0f6c3763758bc37cc4e5af76e"
 
 # Install minimal required packages including Node.js for npm
 RUN apt-get update && apt-get install -y --no-install-recommends \
