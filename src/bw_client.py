@@ -136,7 +136,7 @@ class BitwardenClient:
                 check=check,
                 env=env,
             )
-        except CalledProcessError as e:
+        except Exception as e:
             masked_e = password_regex.sub("('--password', '****')]", e.__str__())
             masked_e = unlock_regex.sub("('unlock', '**** --raw')", masked_e)
             logger.error(f"Failed to run command: {masked_e}")
@@ -148,7 +148,7 @@ class BitwardenClient:
                     check=True,
                     env=env,
                 )
-            except CalledProcessError as inner_e:
+            except Exception as inner_e:
                 masked_inner_e = password_regex.sub(
                     "('--password', '****')]", inner_e.__str__()
                 )
