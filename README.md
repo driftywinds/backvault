@@ -26,7 +26,7 @@ It’s designed for hands-free, secure, and automated backups using the official
 You can run BackVault directly using the **published Docker image**, no build required.
 You can use either the GitHub Registry image (`ghcr.io/mvfc/backvault`) or the Docker Hub image (`mvflc/backvault`).
 
-All tags up from v1.0.4 are multi-architecture images and can be deployed to Linux/AMD64, Linux/ARM64 and Linux/ARM/v7 systems by just pointing to latest or the corresponding version tag.
+All tags up from v2.0.0 are multi-architecture images and can be deployed to Linux/AMD64, Linux/ARM64 and Linux/ARM/v7 systems by just pointing to latest or the corresponding version tag.
 
 Before running the Docker or Docker Compose commands, create the db and backup folders you will mount to on your host *WITHOUT* using sudo so they are owned by user 1000:1000 (which is unpriviledged). If you skip this step, you *MUST* do a `sudo chown -R 1000:1000 ./db` and a `sudo chown -R 1000:1000 ./backups`.
 
