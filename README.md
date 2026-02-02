@@ -2,7 +2,7 @@
 
 ---
 
-<img width="500" height="500" alt="image" src="https://github.com/user-attachments/assets/3ca55b47-b1c7-4002-a167-f5752605fa1a" />
+<p align=center><img width="500" height="500" alt="image" src="https://github.com/user-attachments/assets/3ca55b47-b1c7-4002-a167-f5752605fa1a" /></p>
 
 **BackVault** is a lightweight Dockerized multi-architecture service that periodically backs up your **Bitwarden** or **Vaultwarden** vaults into password-protected encrypted files.
 It’s designed for hands-free, secure, and automated backups using the official Bitwarden CLI.
@@ -28,7 +28,7 @@ You can use either the GitHub Registry image (`ghcr.io/mvfc/backvault`) or the D
 
 All tags up from v2.0.0 are multi-architecture images and can be deployed to Linux/AMD64, Linux/ARM64 and Linux/ARM/v7 systems by just pointing to latest or the corresponding version tag.
 
-Before running the Docker or Docker Compose commands, create the db and backup folders you will mount to on your host *WITHOUT* using sudo so they are owned by user 1000:1000 (which is unpriviledged). If you skip this step, you *MUST* do a `sudo chown -R 1000:1000 ./db` and a `sudo chown -R 1000:1000 ./backups`.
+If you're mounting the db to a NFS mount, make sure your NFS server has the export configured with ```no_root_squash``` and your clients mounts with ```local_lock=all,sync,intr```.
 
 ```bash
 docker run -d \
@@ -36,6 +36,7 @@ docker run -d \
   -e BW_SERVER="https://vault.yourdomain.com" \
   -e BACKUP_ENCRYPTION_MODE="raw" \
   -e BACKUP_INTERVAL_HOURS=12 \
+  -e TZ="Europe/Amsterdam" \
   -v /path/to/backup:/app/backups \
   -v /path/to/db:/app/db \
   -p 8080:8080 \
@@ -44,6 +45,12 @@ docker run -d \
 
 > 🔑 **Important**: The container uses the official Bitwarden CLI internally.
 > Your credentials are only used to generate the export — they are **never stored** persistently and **never sent** anywhere else.
+
+---
+
+## 🔒Credentials
+
+The credentials used here are your master password (necessary to unlock the Vault), API Client and Secret (which can be found under Settings > Security > Keys on both Bitwarden and Vaultwarden web) and an encryption password for the backup.
 
 ---
 
@@ -74,7 +81,7 @@ You can safely restart or update the container later without re-entering credent
 
 The new version of BackVault is built around **principle of least privilege** and **container-isolated secrets**:
 
-* 🧱 **Non-root container:** The service runs under an unprivileged user (`UID 1000`).
+* 🧱 **Non-root container:** The service runs under an unprivileged user (Default `UID 1000`).
 * 🔐 **Encrypted credential store:** All secrets (Bitwarden credentials, file encryption key and master password) are stored in an SQLCipher database using AES-256 encryption.
 * 🔄 **No plaintext environment secrets:** You no longer need to define sensitive values like `BW_PASSWORD` or `BW_CLIENT_SECRET` as environment variables.
 * 🕶️ **Ephemeral setup interface:** The setup UI is automatically destroyed after configuration to minimize attack surface and idle resource usage.
@@ -98,6 +105,9 @@ services:
       BACKUP_ENCRYPTION_MODE: "raw" # Use 'bitwarden' for the default format
       BACKUP_INTERVAL_HOURS: 12
       NODE_TLS_REJECT_UNAUTHORIZED: 0
+      PUID: 1000
+      PGID: 1000
+      TZ: Europe/Amsterdam # Set to your timezone according to this list https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
     volumes:
       - ./backups:/app/backups
       - ./db:/app/db
@@ -131,6 +141,8 @@ BackVault will automatically:
 | `RETAIN_DAYS`                  | Days to keep backups. `7` by default. Set to `0` to disable cleanup. | ❌ | `7` |
 | `CRON_EXPRESSION`              | Cron string to schedule backups                | ❌        | `0 */12 * * *`              |
 | `NODE_TLS_REJECT_UNAUTHORIZED` | Set to `0` for self-signed certs               | ❌        | `0`                         |
+| `TZ` | Timezone for the container according to  https://en.wikipedia.org/wiki/List_of_tz_database_time_zones              | ❌        | `UTC`                         |
+| `PUID` | 
 
 ---
 
@@ -281,6 +293,14 @@ You are solely responsible for verifying the integrity and restorability of your
 
 Pull requests and issue reports are welcome!
 Feel free to open a PR or discussion on GitHub.
+
+---
+
+## Support the developer
+
+Some people asked me if they could buy me a coffee or something so I set up a BuyMeACoffee. But please don't feel obligated to, I do this on my free time because I enjoy it, but any support is appreciated and help me get more free time to devote to the codebase.  
+
+[!["Buy Me A Coffee"](https://www.buymeacoffee.com/assets/img/custom_images/yellow_img.png)](https://www.buymeacoffee.com/mvfc)
 
 ---
 

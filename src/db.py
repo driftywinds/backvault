@@ -5,9 +5,10 @@ import uuid
 import logging
 from sys import stdout
 import os
+from src.utils import validate_path
 
 logging.basicConfig(
-    level=logging.DEBUG,
+    level=logging.INFO,
     format="%(asctime)s %(levelname)s: %(message)s",
     handlers=[logging.StreamHandler(stdout)],
 )
@@ -15,6 +16,12 @@ logger = logging.getLogger(__name__)
 
 
 def init_db(db_path: str, PRAGMA_KEY_FILE: str) -> None:
+    try:
+        PRAGMA_KEY_FILE = validate_path(PRAGMA_KEY_FILE, "/app")
+        db_path = validate_path(db_path, "/app")
+    except Exception as e:
+        logging.error(f"Invalid PRAGMA_KEY_FILE or db_path path: {e}")
+        return
     logging.info(
         f"Initializing database, attempting to find or create pragma key at {PRAGMA_KEY_FILE}"
     )
@@ -50,6 +57,12 @@ def init_db(db_path: str, PRAGMA_KEY_FILE: str) -> None:
     cursor.execute(f"PRAGMA {PRAGMA_KEY}")
     logging.info("Pragma set. Database encrypted.")
 
+    cursor.execute("PRAGMA journal_mode = WAL")
+    logging.debug("Enabled WAL journal mode.")
+
+    cursor.execute("PRAGMA synchronous = FULL")
+    logging.debug("Set synchronous mode to FULL.")
+
     logging.info("Creating table.")
     try:
         cursor.execute("""
@@ -69,6 +82,12 @@ def init_db(db_path: str, PRAGMA_KEY_FILE: str) -> None:
 def db_connect(
     db_path: str, PRAGMA_KEY_FILE: str
 ) -> tuple[sqlcipher3.Connection | None, sqlcipher3.Cursor | None]:
+    try:
+        PRAGMA_KEY_FILE = validate_path(PRAGMA_KEY_FILE, "/app")
+        db_path = validate_path(db_path, "/app")
+    except Exception as e:
+        logging.error(f"Invalid PRAGMA_KEY_FILE or db_path path: {e}")
+        return None, None
     logging.info(f"Connecting to database at {db_path}")
     if not os.path.exists(db_path):
         logging.error("Database file does not exist.")
@@ -87,15 +106,21 @@ def db_connect(
         return None, None
     cursor = conn.cursor()
     cursor.execute(f"PRAGMA {PRAGMA_KEY}")
-    conn.commit()
+    logging.debug("Pragma set.")
+    cursor.execute("PRAGMA journal_mode = WAL")
+    logging.debug("Enabled WAL journal mode.")
+    cursor.execute("PRAGMA synchronous = FULL")
+    logging.debug("Set synchronous mode to FULL.")
+    logging.debug("Database connection established.")
     return conn, cursor
 
 
 def put_key(conn: sqlcipher3.Connection, name, value) -> None:
-    conn.execute(
-        "INSERT OR REPLACE INTO keys (name, value) VALUES (?, ?)", (name, value)
-    )
-    conn.commit()
+    with conn:
+        conn.execute(
+            "INSERT OR REPLACE INTO keys (name, value) VALUES (?, ?)", (name, value)
+        )
+        logging.debug("Key stored in database.")
 
 
 def get_key(conn: sqlcipher3.Connection, name: str) -> str:

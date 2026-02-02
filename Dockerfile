@@ -1,10 +1,10 @@
 FROM python:3.13-alpine
 
 ARG BW_VERSION="2025.10.0"
-ARG SUPERCRONIC_VERSION="v0.2.39"
-ARG SUPERCRONIC_SHA1SUM_LINUX_AMD64=c98bbf82c5f648aaac8708c182cc83046fe48423
-ARG SUPERCRONIC_SHA1SUM_LINUX_ARM64=5ef4ccc3d43f12d0f6c3763758bc37cc4e5af76e
-ARG SUPERCRONIC_SHA1SUM_LINUX_ARMV7=8c3dbef8175e3f579baefe4e55978f2a27cb76b5
+ARG SUPERCRONIC_VERSION="v0.2.41"
+ARG SUPERCRONIC_SHA1SUM_LINUX_AMD64=f70ad28d0d739a96dc9e2087ae370c257e79b8d7
+ARG SUPERCRONIC_SHA1SUM_LINUX_ARM64=44e10e33e8d98b1d1522f6719f15fb9469786ff0
+ARG SUPERCRONIC_SHA1SUM_LINUX_ARMV7=d1e9c90160c92201233daf164088bd861b4b39a4
 ARG TARGETARCH
 
 # Install minimal required packages
@@ -23,9 +23,12 @@ RUN apk update && apk add --no-cache \
     coreutils \
     libffi-dev \
     cargo \
+    su-exec \
     && rm -rf /var/lib/apk/*
 
 RUN apk upgrade -a
+
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 
 # Install Bitwarden CLI
 RUN set -eux; \
@@ -54,21 +57,21 @@ RUN set -eux; \
 # Prepare working directories
 RUN mkdir -p /app/logs /app/backups /app/db /app/src /.config && \
     chmod -R 700 /app && \
-    chown -R 1000:1000 /app && \
-    chown -R 1000:1000 /.config
+    chmod -R 700 /.config
 
 # Copy project files
 WORKDIR /app
 
-COPY --chown=1000:1000 ./requirements.txt /app/requirements.txt
-COPY --chown=1000:1000 ./src /app/src
-COPY --chown=1000:1000 ./entrypoint.sh /app/entrypoint.sh
-COPY --chown=1000:1000 ./cleanup.sh /app/cleanup.sh
+COPY ./requirements.txt /app/requirements.txt
+COPY ./src /app/src
+COPY ./entrypoint.sh /app/entrypoint.sh
+COPY ./cleanup.sh /app/cleanup.sh
+COPY ./run.sh /app/run.sh
 
-RUN chmod +x /app/entrypoint.sh /app/cleanup.sh
+RUN chmod +x /app/entrypoint.sh /app/cleanup.sh /app/run.sh
 
 # Install Python dependencies
-RUN pip install --upgrade pip && \
+RUN pip install --upgrade pip --no-cache-dir && \
     pip install --no-input --no-cache-dir -r requirements.txt
 
 RUN apk del curl unzip binutils npm coreutils build-base libffi-dev cargo python3-dev --no-cache && \
@@ -76,6 +79,6 @@ RUN apk del curl unzip binutils npm coreutils build-base libffi-dev cargo python
 
 ENV PYTHONPATH=/app
 
-USER 1000:1000
-
 ENTRYPOINT ["/app/entrypoint.sh"]
+
+CMD ["/app/run.sh"]

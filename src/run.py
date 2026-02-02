@@ -4,6 +4,8 @@ from src.bw_client import BitwardenClient
 from datetime import datetime
 from sys import stdout
 from src.db import db_connect, get_key
+from src.utils import validate_path
+import re
 
 logging.basicConfig(
     level=logging.INFO,
@@ -23,7 +25,9 @@ def require_env(name: str) -> str:
 def main():
     # Database setup
     DB_PATH = os.getenv("DB_PATH", "/app/db/backvault.db")
+    DB_PATH = validate_path(DB_PATH, "/app")
     PRAGMA_KEY_FILE = os.getenv("PRAGMA_KEY_FILE", "/app/db/backvault.db.pragma")
+    PRAGMA_KEY_FILE = validate_path(PRAGMA_KEY_FILE, "/app")
     db_conn, db_cursor = db_connect(DB_PATH, PRAGMA_KEY_FILE)
     if not db_conn or not db_cursor:
         return
@@ -35,11 +39,27 @@ def main():
     file_pw = get_key(db_conn, "file_password")
 
     server = require_env("BW_SERVER")
+    if (
+        re.match(
+            r"^(?:https?://)?(?:[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}|(?:\d{1,3}\.){3}\d{1,3}|\w+)(:\d+)?(/[a-zA-Z0-9\-\._~/]*)?$",
+            server,
+        )
+        is None
+    ):
+        logger.error(f"Invalid BW_SERVER URL: '{server}'")
+        return
 
     # Configuration
-    backup_dir = os.getenv("BACKUP_DIR", "/app/backups")
+    backup_dir = "/app/backups" if os.getenv("TEST_MODE") is None else "/tmp"  # nosec
     log_file = os.getenv("LOG_FILE")  # Optional log file
+    log_file = validate_path(log_file, "/app")
     encryption_mode = os.getenv("BACKUP_ENCRYPTION_MODE", "bitwarden").lower()
+
+    if encryption_mode not in ["bitwarden", "raw"]:
+        logger.error(
+            f"Invalid BACKUP_ENCRYPTION_MODE: '{encryption_mode}'. Must be 'bitwarden' or 'raw'."
+        )
+        return
 
     if log_file:
         logger.addHandler(logging.FileHandler(log_file))
